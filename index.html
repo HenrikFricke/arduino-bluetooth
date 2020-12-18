@@ -1,0 +1,62 @@
+<html>
+
+<body>
+  <h1>Arduino &amp; Bluetooth</h1>
+  <p id="status">Not Connected</p>
+  <button id="buttonConnect">Connect</button>
+  <button id="buttonLight" disabled="true">Turn On</button>
+  <script>
+    const BLUETOOTH_GATT_SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb';
+    const BLUETOOTH_GATT_CHARACTERISTIC_UUID = '0000ffe1-0000-1000-8000-00805f9b34fb';
+
+    const buttonConnect = document.getElementById('buttonConnect');
+    const buttonLight = document.getElementById('buttonLight');
+    const status = document.getElementById('status');
+    const encoder = new TextEncoder();
+
+    let device, server, service, characteristic;
+    let isConnected = false;
+    let isTurnedOn = false;
+
+    buttonConnect.addEventListener('click', async () => {
+      if (isConnected) {
+        await device.gatt.disconnect();
+      } else {
+        device = await navigator.bluetooth.requestDevice({ optionalServices: [BLUETOOTH_GATT_SERVICE_UUID] });
+        server = await device.gatt.connect();
+        service = await server.getPrimaryService(BLUETOOTH_GATT_SERVICE_UUID);
+        characteristic = await service.getCharacteristic(BLUETOOTH_GATT_CHARACTERISTIC_UUID);
+      }
+
+      isConnected = !isConnected;
+    });
+
+    buttonLight.addEventListener('click', async () => {
+      await characteristic.writeValue(encoder.encode(isTurnedOn ? '0' : '1'));
+      isTurnedOn = !isTurnedOn;
+    });
+
+    window.requestAnimationFrame(() => {
+      let previousIsConnected = isConnected;
+      let previousIsTurnedOn = isTurnedOn;
+
+      const renderView = () => {
+        if (previousIsConnected !== isConnected || previousIsTurnedOn !== isTurnedOn) {
+          status.innerHTML = isConnected ? 'Connected' : 'Not Connected';
+          buttonConnect.innerHTML = isConnected ? 'Disconnect' : 'Connect';
+          buttonLight.disabled = isConnected ? false : true;
+          buttonLight.innerHTML = isTurnedOn ? 'Turn off' : 'Turn on';
+
+          previousIsTurnedOn = isTurnedOn;
+          previousIsConnected = isConnected;
+        }
+
+        window.requestAnimationFrame(renderView);
+      }
+
+      renderView();
+    });
+  </script>
+</body>
+
+</html>
