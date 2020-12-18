@@ -22,7 +22,7 @@
       if (isConnected) {
         await device.gatt.disconnect();
       } else {
-        device = await navigator.bluetooth.requestDevice({ optionalServices: [BLUETOOTH_GATT_SERVICE_UUID] });
+        device = await navigator.bluetooth.requestDevice({ optionalServices: [BLUETOOTH_GATT_SERVICE_UUID], acceptAllDevices: true });
         server = await device.gatt.connect();
         service = await server.getPrimaryService(BLUETOOTH_GATT_SERVICE_UUID);
         characteristic = await service.getCharacteristic(BLUETOOTH_GATT_CHARACTERISTIC_UUID);
