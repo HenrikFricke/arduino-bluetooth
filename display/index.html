@@ -1,0 +1,69 @@
+<html>
+
+<body>
+  <h1>Arduino &amp; Bluetooth</h1>
+  <p id="status">Not Connected</p>
+  <button id="buttonConnect">Connect</button>
+  <hr />
+  <form id="form">
+    <input type="text" placeholder="Row 1" maxlength="16" name="row1" />
+    <br />
+    <br />
+    <input type="text" placeholder="Row 2" maxlength="16" name="row2" />
+    <br />
+    <br />
+    <input type="submit" value="Set" />
+  </form>
+  <script>
+    const BLUETOOTH_GATT_SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb';
+    const BLUETOOTH_GATT_CHARACTERISTIC_UUID = '0000ffe1-0000-1000-8000-00805f9b34fb';
+
+    const buttonConnect = document.getElementById('buttonConnect');
+    const form = document.getElementById('form');
+    const status = document.getElementById('status');
+    const encoder = new TextEncoder();
+
+    let device, server, service, characteristic;
+    let isConnected = false;
+
+    buttonConnect.addEventListener('click', async () => {
+      if (isConnected) {
+        await device.gatt.disconnect();
+      } else {
+        device = await navigator.bluetooth.requestDevice({ optionalServices: [BLUETOOTH_GATT_SERVICE_UUID], acceptAllDevices: true });
+        server = await device.gatt.connect();
+        service = await server.getPrimaryService(BLUETOOTH_GATT_SERVICE_UUID);
+        characteristic = await service.getCharacteristic(BLUETOOTH_GATT_CHARACTERISTIC_UUID);
+      }
+
+      isConnected = !isConnected;
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const row1 = event.target.elements.row1;
+      const row2 = event.target.elements.row2;
+
+      await characteristic.writeValue(encoder.encode(`${row1.value}#${row2.value}#`));
+    });
+
+    window.requestAnimationFrame(() => {
+      let previousIsConnected = isConnected;
+
+      const renderView = () => {
+        if (previousIsConnected !== isConnected) {
+          status.innerHTML = isConnected ? 'Connected' : 'Not Connected';
+          buttonConnect.innerHTML = isConnected ? 'Disconnect' : 'Connect';
+
+          previousIsConnected = isConnected;
+        }
+
+        window.requestAnimationFrame(renderView);
+      }
+
+      renderView();
+    });
+  </script>
+</body>
+
+</html>
